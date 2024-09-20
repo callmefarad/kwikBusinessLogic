@@ -5,22 +5,27 @@
     "emitDecoratorMetadata": true,
     "module": "commonjs",
     "pretty": true,
-    "outDir": "./dist",  
+    
     "baseUrl": "src",
     "paths": {
       "@/*": ["*"],
       "@config": ["./config"],
       "@databases": ["database"],
+      "@interfaces/*": ["interfaces/*"],
+      "@models/*": ["models/*"],
+      "@middlewares/*": ["middlewares/*"],
+      "@utils/*": ["utils/*"],
+      "@services/*": ["services/*"],
+      "@controllers/*": ["controllers/*"],
+      "@routes/*": ["routes/*"],
          // TODO: uncomments when needed  
-      // "@utils/*": ["utils/*"],
-      // "@interfaces/*": ["interfaces/*"],
-      // "@models/*": ["models/*"],
+  
       // "@dtos/*": ["dtos/*"],
-      // "@services/*": ["services/*"],
-      // "@controllers/*": ["controllers/*"],
-      // "@routes/*": ["routes/*"],
+      
+    
+      
       // "@exceptions/*": ["exceptions/*"],
-      // "@middlewares/*": ["middlewares/*"]
+     
     },
     "allowJs": true,
     "esModuleInterop": true,
