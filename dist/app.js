@@ -19,15 +19,17 @@ const cors_1 = __importDefault(require("cors"));
 const helmet_1 = __importDefault(require("helmet"));
 const mongoose_1 = require("mongoose");
 const _databases_1 = require("@databases");
+const error_middleware_1 = __importDefault(require("@middlewares/error.middleware"));
 class App {
-    constructor() {
+    constructor(routes) {
         this.app = (0, express_1.default)();
         this.port = _config_1.PORT || 7000;
         this.env = _config_1.NODE_ENV || 'development';
         //this function automatic run
         this.initializeMiddlewares();
-        this.initializeRoutes();
+        this.initializeRoutes(routes);
         this.connectToDatabase();
+        this.initializeErrorHandling();
     }
     listen() {
         this.app.listen(this.port, () => {
@@ -56,10 +58,25 @@ class App {
         this.app.use((0, helmet_1.default)());
         // this.app.use(cookieParser());
     }
-    initializeRoutes() {
-        this.app.get('/api', (req, res) => {
-            res.json({ message: 'App is running!' }); // Simple JSON response
+    //   private initializeRoutes() {
+    //   this.app.get('/api', (req: Request, res: Response) => {
+    //     res.json({ message: 'App is running!' });  // Simple JSON response
+    //   });
+    // }
+    /**
+     * Initializes the routes for the application.
+     *
+     * @param {Routes[]} routes - An array of Route objects.
+     */
+    initializeRoutes(routes) {
+        // Iterate over each route and register it with the application.
+        routes.forEach(route => {
+            this.app.use('/api', route.router);
         });
+    }
+    initializeErrorHandling() {
+        // this.app.use(errorHandler);
+        this.app.use(error_middleware_1.default);
     }
 }
 exports.default = App;

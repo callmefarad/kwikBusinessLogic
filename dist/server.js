@@ -14,7 +14,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 require("tsconfig-paths/register");
 const app_1 = __importDefault(require("@/app"));
-const app = new app_1.default();
+const auth_route_1 = __importDefault(require("@/routes/auth.route"));
+const app = new app_1.default([new auth_route_1.default()]);
 app.listen();
 function shutdownServer(signal) {
     return __awaiter(this, void 0, void 0, function* () {
