@@ -7,14 +7,15 @@ import cors from 'cors';
 import helmet from 'helmet';
 import { set, connect } from 'mongoose';
 import { dbConnect } from '@databases';
-
+import errorMiddleware from '@middlewares/error.middleware';
+import { Routes } from '@interfaces/routes.interface';
 class App
 {
   public app: Application;
   public port: number | string;
     public env: string; 
     
-    constructor ()
+    constructor (routes: Routes[])
     {
         this.app = express()
         this.port = PORT || 7000
@@ -22,8 +23,9 @@ class App
 
          //this function automatic run
         this.initializeMiddlewares();
-        this.initializeRoutes();
+        this.initializeRoutes(routes);
         this.connectToDatabase();
+        this.initializeErrorHandling();
 
     }
     public listen()
@@ -57,10 +59,28 @@ class App
   }
 
 
-    private initializeRoutes() {
-    this.app.get('/api', (req: Request, res: Response) => {
-      res.json({ message: 'App is running!' });  // Simple JSON response
+  //   private initializeRoutes() {
+  //   this.app.get('/api', (req: Request, res: Response) => {
+  //     res.json({ message: 'App is running!' });  // Simple JSON response
+  //   });
+  // }
+
+
+  /**
+   * Initializes the routes for the application.
+   *
+   * @param {Routes[]} routes - An array of Route objects.
+   */
+  private initializeRoutes(routes: Routes[]) {
+    // Iterate over each route and register it with the application.
+    routes.forEach(route => {
+      this.app.use('/api', route.router);
     });
+  }
+
+  private initializeErrorHandling() {
+    // this.app.use(errorHandler);
+    this.app.use(errorMiddleware);
   }
         
 }
