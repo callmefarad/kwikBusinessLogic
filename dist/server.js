@@ -12,8 +12,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-require("tsconfig-paths/register");
-const app_1 = __importDefault(require("@/app"));
+// import 'tsconfig-paths/register'; 
+const app_1 = __importDefault(require("./app"));
 const auth_route_1 = __importDefault(require("@/routes/auth.route"));
 const app = new app_1.default([new auth_route_1.default()]);
 app.listen();

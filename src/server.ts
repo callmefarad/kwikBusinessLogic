@@ -1,4 +1,4 @@
-import 'tsconfig-paths/register'; 
+// import 'tsconfig-paths/register'; 
 import App from '@/app';
 import AuthRoute from '@/routes/auth.route';
 
