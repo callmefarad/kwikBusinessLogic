@@ -12,7 +12,7 @@ class AuthService
 {
     public users = userModel;
 
-    public async signup(userData:any):Promise<any>
+    public async signup(userData:any):Promise<{ token: string; user: Omit<User, 'password'> }>
     {
         if (isEmpty(userData.email) || isEmpty(userData.password))
       throw new MainAppError({
@@ -34,14 +34,14 @@ class AuthService
         const hashedPassword = await hash(userData.password, 10);
         const createUserData: User = await this.users.create({ ...userData, password: hashedPassword });
         const { password, ...userWithoutPassword } = createUserData.toObject(); 
-
-        return userWithoutPassword;
-
+        const tokenData = this.createToken(createUserData);
+        
+        return { token: tokenData.token, user: userWithoutPassword };
 
         
     }
 
-    public async login(userData: any): Promise<{ cookie: string; findUser: Omit<User, 'password'> }> {
+    public async login(userData: any): Promise<{ token: string; findUser: Omit<User, 'password'> }> {
     if (isEmpty(userData.email) || isEmpty(userData.password))
       throw new MainAppError({
         name: 'validationError',
@@ -69,9 +69,9 @@ class AuthService
       });
 
     const tokenData = this.createToken(findUser);
-    const cookie = this.createCookies(tokenData);
     const { password, ...userWithoutPassword } = findUser.toObject(); // Convert to plain object
-    return { cookie, findUser:userWithoutPassword };
+    return { token: tokenData.token, findUser: userWithoutPassword };
+   
   }
 
   public async logout(userData: User): Promise<User> {
@@ -105,7 +105,17 @@ class AuthService
   }
 
   public createCookies(tokenData: TokenData): string {
-    return `Authorization=${tokenData.token}; HttpOnly; Max-Age=${tokenData.expiresIn}`;
+    const cookieOptions = [
+        `Authorization=${tokenData.token}`,
+        'HttpOnly', // Prevents JavaScript access to the cookie
+        `Max-Age=${tokenData.expiresIn}`, // Cookie expiration time in seconds
+        'Path=/', // Path where the cookie is valid
+        'SameSite=Lax', // Adjust based on your needs (Lax, Strict, None)
+        // 'Secure', // Uncomment if using HTTPS
+    ].join('; ');
+
+    return cookieOptions;
+    
   }
     
 }

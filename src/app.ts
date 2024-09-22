@@ -9,6 +9,7 @@ import { set, connect } from 'mongoose';
 import { dbConnect } from '@databases';
 import errorMiddleware from '@middlewares/error.middleware';
 import { Routes } from '@interfaces/routes.interface';
+import cookieParser from 'cookie-parser';
 class App
 {
   public app: Application;
@@ -55,7 +56,7 @@ class App
     this.app.use(cors());
     this.app.use(express.json());
     this.app.use(helmet());
-    // this.app.use(cookieParser());
+    this.app.use(cookieParser());
   }
 
 

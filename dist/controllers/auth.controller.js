@@ -20,7 +20,11 @@ class classAuthController {
             try {
                 const userData = req.body;
                 const createUserData = yield this.authServices.signup(userData);
-                res.status(201).json({ data: createUserData, message: 'created' });
+                res.status(201).json({
+                    user: createUserData.user, // user data without password
+                    token: createUserData.token, // token for authentication
+                    message: 'User created successfully'
+                });
             }
             catch (error) {
                 next(error);
@@ -29,11 +33,14 @@ class classAuthController {
         this.loginUser = (req, res, next) => __awaiter(this, void 0, void 0, function* () {
             try {
                 const userData = req.body;
-                const { cookie, findUser } = yield this.authServices.login(userData);
+                const { token, findUser } = yield this.authServices.login(userData);
+                // Create cookie and set it in the response
+                const cookie = this.authServices.createCookies({ token, expiresIn: 60 * 60 });
                 res.setHeader('Set-Cookie', [cookie]);
                 res.status(200).json({
-                    message: 'login successfully',
-                    data: findUser,
+                    message: 'Login successfully',
+                    token, // Return the token in the response
+                    user: findUser,
                 });
             }
             catch (error) {
@@ -43,9 +50,12 @@ class classAuthController {
         this.logOutUser = (req, res, next) => __awaiter(this, void 0, void 0, function* () {
             try {
                 const userData = req.user;
-                const logOutUserData = yield this.authServices.logout(userData);
-                res.setHeader('Set-Cookie', ['Authorization=; Max-age=0']);
-                res.status(200).json({ data: logOutUserData, message: 'logout' });
+                // Clear the cookie
+                res.setHeader('Set-Cookie', ['Authorization=; Max-Age=0; Path=/; HttpOnly']);
+                res.status(200).json({
+                    // data: userData, // Return user data if needed
+                    message: 'Logout successful',
+                });
             }
             catch (error) {
                 next(error);
