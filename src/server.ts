@@ -1,9 +1,10 @@
 // import 'tsconfig-paths/register'; 
 import App from '@/app';
 import AuthRoute from '@/routes/auth.route';
+import StoreRoute from '@/routes/store.route';
 
 
-const app = new App([new AuthRoute()])
+const app = new App([new AuthRoute(), new StoreRoute() ])
 app.listen();
 
 async function shutdownServer(signal: string) {

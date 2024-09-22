@@ -54,7 +54,8 @@ class AuthService {
             const hashedPassword = yield (0, bcrypt_1.hash)(userData.password, 10);
             const createUserData = yield this.users.create(Object.assign(Object.assign({}, userData), { password: hashedPassword }));
             const _a = createUserData.toObject(), { password } = _a, userWithoutPassword = __rest(_a, ["password"]);
-            return userWithoutPassword;
+            const tokenData = this.createToken(createUserData);
+            return { token: tokenData.token, user: userWithoutPassword };
         });
     }
     login(userData) {
@@ -83,9 +84,8 @@ class AuthService {
                     isSuccess: false,
                 });
             const tokenData = this.createToken(findUser);
-            const cookie = this.createCookies(tokenData);
             const _a = findUser.toObject(), { password } = _a, userWithoutPassword = __rest(_a, ["password"]); // Convert to plain object
-            return { cookie, findUser: userWithoutPassword };
+            return { token: tokenData.token, findUser: userWithoutPassword };
         });
     }
     logout(userData) {
@@ -116,7 +116,15 @@ class AuthService {
         return { expiresIn, token: (0, jsonwebtoken_1.sign)(dataStoredInToken, secretKey, { expiresIn }) };
     }
     createCookies(tokenData) {
-        return `Authorization=${tokenData.token}; HttpOnly; Max-Age=${tokenData.expiresIn}`;
+        const cookieOptions = [
+            `Authorization=${tokenData.token}`,
+            'HttpOnly', // Prevents JavaScript access to the cookie
+            `Max-Age=${tokenData.expiresIn}`, // Cookie expiration time in seconds
+            'Path=/', // Path where the cookie is valid
+            'SameSite=Lax', // Adjust based on your needs (Lax, Strict, None)
+            // 'Secure', // Uncomment if using HTTPS
+        ].join('; ');
+        return cookieOptions;
     }
 }
 exports.default = AuthService;

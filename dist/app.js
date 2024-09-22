@@ -20,6 +20,7 @@ const helmet_1 = __importDefault(require("helmet"));
 const mongoose_1 = require("mongoose");
 const _databases_1 = require("@databases");
 const error_middleware_1 = __importDefault(require("@middlewares/error.middleware"));
+const cookie_parser_1 = __importDefault(require("cookie-parser"));
 class App {
     constructor(routes) {
         this.app = (0, express_1.default)();
@@ -56,7 +57,7 @@ class App {
         this.app.use((0, cors_1.default)());
         this.app.use(express_1.default.json());
         this.app.use((0, helmet_1.default)());
-        // this.app.use(cookieParser());
+        this.app.use((0, cookie_parser_1.default)());
     }
     //   private initializeRoutes() {
     //   this.app.get('/api', (req: Request, res: Response) => {
