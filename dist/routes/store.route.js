@@ -15,7 +15,8 @@ class StoreRoutes {
     }
     initializeRoutes() {
         this.router.post(`${this.path}create-store`, auth_middleware_1.default, this.storeController.createStore);
-        this.router.get(`${this.path}store/get-single`, this.storeController.getSingleStore);
+        this.router.get(`${this.path}store/get-single`, auth_middleware_1.default, this.storeController.getSingleStore);
+        this.router.get(`${this.path}store`, this.storeController.getStoreByLink);
         // this.router.post(`${this.path}logout`, this.authController.logOutUser);
     }
 }

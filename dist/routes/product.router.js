@@ -15,8 +15,8 @@ class ProductRoutes {
         this.initializeRoutes();
     }
     initializeRoutes() {
-        this.router.post(`${this.path}:storeId/create-store`, multer_1.default.single('image'), auth_middleware_1.default, this.productController.createProduct);
-        this.router.get(`${this.path}stores/:storeId/products`, auth_middleware_1.default, this.productController.getProductsByStore);
+        this.router.post(`${this.path}:storeId/create-product`, multer_1.default.single('image'), auth_middleware_1.default, this.productController.createProduct);
+        this.router.get(`${this.path}stores/:storeId/products`, this.productController.getProductsByStore);
         // this.router.post(`${this.path}logout`, this.authController.logOutUser);
     }
 }

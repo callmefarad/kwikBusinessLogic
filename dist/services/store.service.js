@@ -70,5 +70,22 @@ class StoreService {
             return store;
         });
     }
+    getStoreByLink(storeLink) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const store = yield this.store
+                .findOne({ storeLink }) // Find the store by its unique storeLink
+                .populate('products') // Populate the products array with product details
+                .exec();
+            if (!store) {
+                throw new errorDefinition_1.MainAppError({
+                    name: 'StoreNotFoundError',
+                    message: 'Store not found for this link',
+                    status: 404,
+                    isSuccess: false,
+                });
+            }
+            return store;
+        });
+    }
 }
 exports.default = StoreService;

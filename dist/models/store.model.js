@@ -32,7 +32,7 @@ const storeSchema = new mongoose_1.Schema({
 storeSchema.pre('save', function (next) {
     if (!this.storeLink) {
         // Generate a unique store link by appending the userId
-        this.storeLink = `http://localhost:3000/store/${this.storeName.replace(/\s+/g, '-').toLowerCase()}-${this.userId}`;
+        this.storeLink = `${this.storeName.replace(/\s+/g, '-').toLowerCase()}-${this.userId}`;
     }
     next();
 });

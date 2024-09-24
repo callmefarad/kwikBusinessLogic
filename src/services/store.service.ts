@@ -73,6 +73,27 @@ class StoreService
 
   return store;
 }
+
+public async getStoreByLink(storeLink: string): Promise<Store | null> {
+    const store = await this.store
+      .findOne({ storeLink })  // Find the store by its unique storeLink
+      .populate('products')    // Populate the products array with product details
+      .exec();
+
+    if (!store) {
+      throw new MainAppError({
+        name: 'StoreNotFoundError',
+        message: 'Store not found for this link',
+        status: 404,
+        isSuccess: false,
+      });
+    }
+
+    return store;
+  }
+  
+
+
     
 }
  

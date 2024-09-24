@@ -15,8 +15,8 @@ class ProductRoutes implements Routes {
   }
 
   private initializeRoutes() {
-    this.router.post(`${this.path}:storeId/create-store`,upload.single('image'),authMiddleware, this.productController.createProduct);
-    this.router.get(`${this.path}stores/:storeId/products`, authMiddleware,this.productController.getProductsByStore);
+    this.router.post(`${this.path}:storeId/create-product`,upload.single('image'),authMiddleware, this.productController.createProduct);
+    this.router.get(`${this.path}stores/:storeId/products`, this.productController.getProductsByStore);
     // this.router.post(`${this.path}logout`, this.authController.logOutUser);
   }
 }
