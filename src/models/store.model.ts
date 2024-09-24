@@ -32,14 +32,13 @@ const storeSchema: Schema = new Schema({
 }, { timestamps: true });
 
 // Pre-save middleware to generate store link
-storeSchema.pre('save', function(next) {
+storeSchema.pre<Store>('save', function(this: Store, next) {
   if (!this.storeLink) {
     // Generate a unique store link by appending the userId
-    this.storeLink = `http://localhost:3000/store/${(this.storeName as string).replace(/\s+/g, '-').toLowerCase()}-${this.userId}`;
+    this.storeLink = `${this.storeName.replace(/\s+/g, '-').toLowerCase()}-${this.userId}`;
   }
   next();
 });
-
 const storeModel = model<Store & Document>('Store', storeSchema);
 
 export default storeModel;

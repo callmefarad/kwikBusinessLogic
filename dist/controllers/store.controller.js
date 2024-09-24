@@ -49,6 +49,25 @@ class classAuthController {
                 next(error);
             }
         });
+        this.getStoreByLink = (req, res, next) => __awaiter(this, void 0, void 0, function* () {
+            try {
+                const { storeLink } = req.query; // Extract storeLink from query string
+                if (!storeLink) {
+                    res.status(400).json({ message: 'storeLink is required' });
+                }
+                const store = yield this.storeService.getStoreByLink(storeLink);
+                if (!store) {
+                    res.status(404).json({ message: 'Store not found' });
+                }
+                res.status(200).json({
+                    message: 'Store fetched successfully',
+                    data: store,
+                });
+            }
+            catch (error) {
+                next(error);
+            }
+        });
     }
 }
 exports.default = classAuthController;

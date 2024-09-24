@@ -42,7 +42,31 @@ class classAuthController {
   } catch (error) {
     next(error);
   }
-};
+  };
+  
+   public getStoreByLink = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+   try {
+      const { storeLink } = req.query;  // Extract storeLink from query string
+
+      if (!storeLink) {
+        res.status(400).json({ message: 'storeLink is required' });
+      }
+
+      const store = await this.storeService.getStoreByLink(storeLink as string);
+
+      if (!store) {
+         res.status(404).json({ message: 'Store not found' });
+      }
+
+      res.status(200).json({
+        message: 'Store fetched successfully',
+        data: store,
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+
 
 
    

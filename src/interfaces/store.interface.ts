@@ -3,6 +3,7 @@ export interface Store {
   userId: string; // Reference to the User
   storeName: string;
   address: string; // Unique link for the store
-  country: string;   
+  country: string; 
+  storeLink: string;
   products:{}[]; // Array of product IDs or objects
 }
