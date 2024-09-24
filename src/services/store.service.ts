@@ -54,6 +54,25 @@ class StoreService
         
 
      }
+
+    
+  public async getSingleStore(userId: string): Promise<Store | null> {
+   const store = await this.store
+      .findOne({ userId })  // Find the store that belongs to the user
+      .populate('products') // Populate the products array with product details
+      .exec();
+
+    if (!store) {
+      throw new MainAppError({
+        name: 'StoreNotFoundError',
+        message: 'Store not found for this user',
+        status: 404,
+        isSuccess: false,
+      });
+    }
+
+  return store;
+}
     
 }
  

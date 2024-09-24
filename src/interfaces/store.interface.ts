@@ -4,5 +4,5 @@ export interface Store {
   storeName: string;
   address: string; // Unique link for the store
   country: string;   
-  products: string[]; // Array of product IDs or objects
+  products:{}[]; // Array of product IDs or objects
 }

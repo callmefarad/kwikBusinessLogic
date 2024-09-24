@@ -33,6 +33,22 @@ class classAuthController {
                 next(error);
             }
         });
+        this.getSingleStore = (req, res, next) => __awaiter(this, void 0, void 0, function* () {
+            try {
+                const userId = req.user._id; // Assuming req.user is populated after authentication middleware
+                const store = yield this.storeService.getSingleStore(userId);
+                if (!store) {
+                    res.status(404).json({ message: 'Store not found' });
+                }
+                res.status(200).json({
+                    message: 'Store fetched successfully',
+                    data: store,
+                });
+            }
+            catch (error) {
+                next(error);
+            }
+        });
     }
 }
 exports.default = classAuthController;

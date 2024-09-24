@@ -53,5 +53,22 @@ class StoreService {
             return createStoreData;
         });
     }
+    getSingleStore(userId) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const store = yield this.store
+                .findOne({ userId }) // Find the store that belongs to the user
+                .populate('products') // Populate the products array with product details
+                .exec();
+            if (!store) {
+                throw new errorDefinition_1.MainAppError({
+                    name: 'StoreNotFoundError',
+                    message: 'Store not found for this user',
+                    status: 404,
+                    isSuccess: false,
+                });
+            }
+            return store;
+        });
+    }
 }
 exports.default = StoreService;
