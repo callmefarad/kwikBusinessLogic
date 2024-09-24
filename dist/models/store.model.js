@@ -21,7 +21,7 @@ const storeSchema = new mongoose_1.Schema({
     },
     products: [{
             type: mongoose_1.Schema.Types.ObjectId,
-            ref: 'product', // Assuming 'product' model exists
+            ref: 'products', // Assuming 'product' model exists
         }],
     storeLink: {
         type: String,

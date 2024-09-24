@@ -4,19 +4,20 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
-const store_controller_1 = __importDefault(require("@controllers/store.controller"));
+const product_controller_1 = __importDefault(require("@controllers/product.controller"));
 const auth_middleware_1 = __importDefault(require("@middlewares/auth.middleware"));
-class StoreRoutes {
+const multer_1 = __importDefault(require("../utils/multer"));
+class ProductRoutes {
     constructor() {
         this.path = '/';
         this.router = (0, express_1.Router)();
-        this.storeController = new store_controller_1.default();
+        this.productController = new product_controller_1.default();
         this.initializeRoutes();
     }
     initializeRoutes() {
-        this.router.post(`${this.path}create-store`, auth_middleware_1.default, this.storeController.createStore);
-        this.router.get(`${this.path}store/get-single`, auth_middleware_1.default, this.storeController.getSingleStore);
+        this.router.post(`${this.path}:storeId/create-store`, multer_1.default.single('image'), auth_middleware_1.default, this.productController.createProduct);
+        this.router.get(`${this.path}stores/:storeId/products`, auth_middleware_1.default, this.productController.getProductsByStore);
         // this.router.post(`${this.path}logout`, this.authController.logOutUser);
     }
 }
-exports.default = StoreRoutes;
+exports.default = ProductRoutes;

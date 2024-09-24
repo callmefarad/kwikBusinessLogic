@@ -15,7 +15,7 @@ class StoreRoutes implements Routes {
 
   private initializeRoutes() {
     this.router.post(`${this.path}create-store`,authMiddleware, this.storeController.createStore);
-    // this.router.post(`${this.path}login`, this.authController.loginUser);
+    this.router.get(`${this.path}store/get-single`, authMiddleware, this.storeController.getSingleStore);
     // this.router.post(`${this.path}logout`, this.authController.logOutUser);
   }
 }

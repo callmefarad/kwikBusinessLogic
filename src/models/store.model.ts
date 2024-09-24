@@ -23,7 +23,7 @@ const storeSchema: Schema = new Schema({
   },
   products: [{
     type: Schema.Types.ObjectId,
-    ref: 'product',  // Assuming 'product' model exists
+    ref: 'products',  // Assuming 'product' model exists
   }],
   storeLink: {
     type: String,

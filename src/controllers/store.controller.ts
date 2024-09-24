@@ -25,6 +25,26 @@ class classAuthController {
         }
     }
 
+    public getSingleStore = async (req: any, res: Response, next: NextFunction): Promise<void> => {
+  try {
+   const userId = req.user._id;  // Assuming req.user is populated after authentication middleware
+
+      const store = await this.storeService.getSingleStore(userId);
+
+      if (!store) {
+        res.status(404).json({ message: 'Store not found' });
+      }
+
+      res.status(200).json({
+        message: 'Store fetched successfully',
+        data: store,
+      });
+  } catch (error) {
+    next(error);
+  }
+};
+
+
    
 }
 

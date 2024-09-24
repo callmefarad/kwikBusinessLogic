@@ -16,7 +16,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const app_1 = __importDefault(require("@/app"));
 const auth_route_1 = __importDefault(require("@/routes/auth.route"));
 const store_route_1 = __importDefault(require("@/routes/store.route"));
-const app = new app_1.default([new auth_route_1.default(), new store_route_1.default()]);
+const product_router_1 = __importDefault(require("@/routes/product.router"));
+const app = new app_1.default([new auth_route_1.default(), new store_route_1.default(), new product_router_1.default()]);
 app.listen();
 function shutdownServer(signal) {
     return __awaiter(this, void 0, void 0, function* () {
