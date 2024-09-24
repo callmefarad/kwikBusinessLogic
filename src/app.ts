@@ -33,7 +33,7 @@ class App
     {
         this.app.listen(this.port, () =>
         {
-          console.log("🚀 App listening onn the port " + this.port)  
+          console.log("🚀 App listening on the port " + this.port)  
         })
     }
 
