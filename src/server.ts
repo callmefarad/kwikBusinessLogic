@@ -4,9 +4,10 @@ import App from '@/app';
 import AuthRoute from '@/routes/auth.route';
 import StoreRoute from '@/routes/store.route';
 import ProductRoute from '@/routes/product.router';
+import PaymentRoute from "@routes/payment.route"
 
 
-const app = new App([new AuthRoute(), new StoreRoute(), new ProductRoute()]); 
+const app = new App([new AuthRoute(), new StoreRoute(), new ProductRoute(), new PaymentRoute()]); 
 app.listen();
 
 async function shutdownServer(signal: string) {
