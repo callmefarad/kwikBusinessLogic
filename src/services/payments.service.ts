@@ -1,6 +1,7 @@
 import { hash, compare } from 'bcrypt';
 import userModel from '@models/user.model';
 import storeModel from '@models/store.model';
+import purchaseModel from '@models/purchase.model';
 import { MainAppError } from '@utils/errorDefinition';
 import { isEmpty } from '@utils/util';
 import { HTTP } from '@interfaces/error.interface';
@@ -37,23 +38,28 @@ function encryptAES256(encryptionKey: string, paymentData: any) {
 
 
 class PaymentService {
-  public async bankTransfer(accountName: string, amount: number, currency: string, reference: string, 
+  public async bankTransfer(amount: number, 
     customer: { name: string, email: string }
   ): Promise<any> {
-    try {
+    try
+    {
+      const GenerateTransactionReference = uuid();
+      
       const data = {
-        account_name: accountName,
+        account_name: "Demo account",
         amount: amount,
-        currency: currency,
-        reference: reference,
+        currency: "NGN",
+        notification_url: "https://merchant-redirect-url.com",
+        reference: GenerateTransactionReference,
         customer: {
           name: customer.name,
           email: customer.email,
         },
+        //  auto_complete: true 
       };
 
-      const config: AxiosRequestConfig = {
-        method: 'post',
+      const config= {
+        method: "post",
         maxBodyLength: Infinity,
         url: 'https://api.korapay.com/merchant/api/v1/charges/bank-transfer',
         headers: {
@@ -63,11 +69,26 @@ class PaymentService {
         data: JSON.stringify(data),
       };
 
-      const response = await axios(config);
-      return response.data; // Return the response for further processing
+      let paymemtresponse:any ; 
+
+    await axios(config).then(async function (response)
+    { 
+      paymemtresponse = response
+
+    }).catch(function (error)
+    {
+      throw new MainAppError({
+        name: 'Failed transaction',
+        message: `Transaction not failed ${error.message}` ,
+        status: 404,
+        isSuccess: false,
+      });
+    })
+
+    return   JSON.parse(JSON.stringify(paymemtresponse?.data))
     } catch (error:any) {
       console.error('Error during bank transfer:', error.message);
-      throw new Error('Failed to process the bank transfer');
+      throw new Error(`Failed to process the bank transfer1 ${error}`, );
     }
   }
 
@@ -80,7 +101,11 @@ class PaymentService {
       expiry_month: string;
     },
     amount: number,
-    user: { name: string; email: string })
+    user: { name: string; email: string, address:string },
+    products: Array<{ productId: string; productName: string; quantity: number; price: number }>,
+    storeOwner: { name: string; storeId: string }
+  
+  )
   {
 
     const GenerateTransactionReference = uuid();
@@ -136,14 +161,66 @@ class PaymentService {
     {
       throw new MainAppError({
         name: 'Failed transaction',
-        message: 'Transaction not failed',
+        message: `Transaction not failed ${error.message}` ,
         status: 404,
         isSuccess: false,
       });
     })
+    const check = JSON.parse(JSON.stringify(paymemtresponse?.data))
+    
+    console.log("djc", check)
+
+    if (check?.data?.status === "success") {
+    try {
+      const purchase = new purchaseModel({
+        customer: {
+          name: user?.name,
+          email: user?.email,
+          address: user?.address
+        },
+        storeOwner: {
+          // name: storeOwner?.name,
+          storeId: storeOwner?.storeId,
+        },
+        products: products.map((product) => ({
+          productId: product.productId,
+          productName: product.productName,
+          quantity: product.quantity,
+          price: product.price,
+        })),
+        totalAmount: amount,
+        paymentStatus: "paid", // Mark as paid after successful transaction
+      });
+
+      await purchase.save(); // Save the purchase details
+    } catch (error) {
+      console.error("Error saving purchase details:", error);
+      throw new MainAppError({
+        name: 'Database error',
+        message: `Failed to save purchase details: ${error}`,
+        status: 500,
+        isSuccess: false,
+      });
+    }
+  }
+
 
     return   JSON.parse(JSON.stringify(paymemtresponse?.data))
   } 
+
+  public async getPurchasesByStoreId(storeId: string) {
+    try {
+      const purchases = await purchaseModel.find({ 'storeOwner.storeId': storeId });
+
+      if (!purchases || purchases.length === 0) {
+        throw new Error('No purchases found for this store');
+      }
+
+      return purchases;
+    } catch (error:any) {
+      throw new Error(error.message || 'Error retrieving purchases');
+    }
+  }
 
 
   public async payWithCardTest(
@@ -151,7 +228,9 @@ class PaymentService {
     amount: number, 
     currency: string, 
     reference: string, 
-    customer: { name: string, email: string }
+    customer: { name: string, email: string, address:string },
+    products: Array<{ productId: string; productName: string; quantity: number; price: number }>,
+    storeOwner: { name: string; storeId: string }
   ): Promise<any> {
     try {
       // Prepare the data for the card charge
