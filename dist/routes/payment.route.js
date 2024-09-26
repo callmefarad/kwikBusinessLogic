@@ -13,8 +13,9 @@ class PaymentRoutes {
         this.initializeRoutes();
     }
     initializeRoutes() {
-        this.router.post(`${this.path}create-payment`, this.paymentController.handleCardPaymentTest);
-        // this.router.post(`${this.path}login`, this.authController.loginUser);
+        this.router.post(`${this.path}card-payment`, this.paymentController.handleCardPaymentTest);
+        this.router.get(`${this.path}:storeId/purchase`, this.paymentController.getPurchaseByStore);
+        this.router.post(`${this.path}create-bank-payment`, this.paymentController.handleBankTransfer);
         // this.router.post(`${this.path}logout`, authMiddleware, this.authController.logOutUser);
     }
 }
