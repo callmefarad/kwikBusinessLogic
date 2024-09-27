@@ -63,6 +63,30 @@ class PaymentController {
                 });
             }
         });
+        this.getPayments = (req, res) => __awaiter(this, void 0, void 0, function* () {
+            try {
+                const payments = yield this.paymentService.getPayments();
+                res.json(payments);
+            }
+            catch (error) {
+                console.error('Error fetching payments:', error.message);
+                res.status(500).json({ message: error.message });
+            }
+        });
+        this.webhookHandler = (req, res, next) => __awaiter(this, void 0, void 0, function* () {
+            try {
+                const { event, data } = req.body;
+                const result = yield this.paymentService.webHooksUrls(event, data);
+                // Send the appropriate response based on the result
+                res.status(result.status).json({ message: result.message });
+            }
+            catch (error) {
+                res.status(404).json({
+                    message: `ops ${error.message}`,
+                    isSuccess: false,
+                });
+            }
+        });
         this.handleCardPaymentTest = (req, res, next) => __awaiter(this, void 0, void 0, function* () {
             try {
                 const { name, number, cvv, pin, expiry_year, expiry_month, amount, user, cart, storeOwner } = req.body;

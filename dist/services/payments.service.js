@@ -28,6 +28,9 @@ function encryptAES256(encryptionKey, paymentData) {
     return `${ivToHex}:${encryptedToHex}:${cipher.getAuthTag().toString("hex")}`;
 }
 class PaymentService {
+    constructor() {
+        this.payments = [];
+    }
     bankTransfer(amount, customer) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
@@ -68,6 +71,33 @@ class PaymentService {
                     });
                 });
                 return JSON.parse(JSON.stringify(paymemtresponse === null || paymemtresponse === void 0 ? void 0 : paymemtresponse.data));
+            }
+            catch (error) {
+                console.error('Error during bank transfer:', error.message);
+                throw new Error(`Failed to process the bank transfer1 ${error}`);
+            }
+        });
+    }
+    addPayment(payment) {
+        this.payments.push(payment);
+    }
+    getPayments() {
+        return this.payments;
+    }
+    webHooksUrls(event, data) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                if (event === "charge.success") {
+                    const paymentData = {
+                        reference: data.reference,
+                        amount: data.amount,
+                        status: data.status,
+                        customer: data.customer,
+                    };
+                    const addedPayment = this.addPayment(paymentData);
+                    // Return success message
+                    return { status: 200, message: "Webhook received successfully", payment: addedPayment };
+                }
             }
             catch (error) {
                 console.error('Error during bank transfer:', error.message);

@@ -63,6 +63,37 @@ class PaymentController {
       });
     }
   }
+
+   public getPayments = async(req: Request, res: Response): Promise<void> =>{
+        try {
+            const payments = await this.paymentService.getPayments();
+             res.json(payments);
+        } catch (error:any) {
+            console.error('Error fetching payments:', error.message);
+               res.status(500).json({ message: error.message });
+        }
+    }
+
+  public webhookHandler = async (req: Request, res: Response, next: NextFunction) : Promise<void> =>{
+    try
+    {
+        const { event, data } = req.body;
+
+       
+        const result:any = await this.paymentService.webHooksUrls(event, data);
+            // Send the appropriate response based on the result
+        res.status(result.status).json({ message: result.message });
+       
+      
+    } catch (error:any)
+    {
+      res.status(404).json({
+        message:`ops ${error.message}`,
+        isSuccess: false,
+      });
+      
+    }
+  }
     
      public handleCardPaymentTest = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
