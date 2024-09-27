@@ -87,16 +87,23 @@ class PaymentService {
     webHooksUrls(event, data) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                if (event === "charge.success") {
-                    const paymentData = {
-                        reference: data.reference,
-                        amount: data.amount,
-                        status: data.status,
-                        customer: data.customer,
-                    };
-                    const addedPayment = this.addPayment(paymentData);
-                    // Return success message
-                    return { status: 200, message: "Webhook received successfully", payment: addedPayment };
+                const paymentData = {
+                    reference: data.reference,
+                    amount: data.amount,
+                    status: data.status,
+                    customer: data.customer,
+                };
+                switch (event) {
+                    case "charge.success":
+                    case "transfer.success":
+                        this.addPayment(paymentData); // Save the payment information
+                        return { status: 200, message: "Webhook processed successfully", payment: paymentData };
+                    case "charge.failed":
+                    case "transfer.failed":
+                        // Handle failed transactions as needed
+                        return { status: 200, message: "Transaction failed", payment: paymentData };
+                    default:
+                        return { status: 400, message: "Unhandled event" };
                 }
             }
             catch (error) {
@@ -104,6 +111,10 @@ class PaymentService {
                 throw new Error(`Failed to process the bank transfer1 ${error}`);
             }
         });
+    }
+    verifySignature(data, signature) {
+        const hash = crypto_1.default.createHmac('sha256', KORAPAY_API_KEY).update(JSON.stringify(data)).digest('hex');
+        return hash === signature;
     }
     payWithCard(cardData, amount, user, products, storeOwner) {
         return __awaiter(this, void 0, void 0, function* () {

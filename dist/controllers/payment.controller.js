@@ -74,11 +74,15 @@ class PaymentController {
             }
         });
         this.webhookHandler = (req, res, next) => __awaiter(this, void 0, void 0, function* () {
+            const { event, data } = req.body;
+            const signature = req.headers['x-korapay-signature'];
+            // Verify the signature
+            if (!this.paymentService.verifySignature(data, signature)) {
+                res.status(403).json({ message: "Invalid signature" });
+            }
             try {
-                const { event, data } = req.body;
                 const result = yield this.paymentService.webHooksUrls(event, data);
-                // Send the appropriate response based on the result
-                res.status(result.status).json({ message: result.message });
+                res.status(result.status).json({ message: result.message, payment: result.payment });
             }
             catch (error) {
                 res.status(404).json({
