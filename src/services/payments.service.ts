@@ -36,8 +36,18 @@ function encryptAES256(encryptionKey: string, paymentData: any) {
   return `${ivToHex}:${encryptedToHex}:${cipher.getAuthTag().toString("hex")}`;
 }
 
+interface PaymentData {
+    reference: string;
+    amount: number;
+    status: string;
+    customer: any; // Adjust type based on your customer data structure
+}
 
-class PaymentService {
+
+class PaymentService
+{
+  
+   private payments: PaymentData[] = []; 
   public async bankTransfer(amount: number, 
     customer: { name: string, email: string }
   ): Promise<any> {
@@ -87,6 +97,42 @@ class PaymentService {
 
     return   JSON.parse(JSON.stringify(paymemtresponse?.data))
     } catch (error:any) {
+      console.error('Error during bank transfer:', error.message);
+      throw new Error(`Failed to process the bank transfer1 ${error}`, );
+    }
+  }
+
+  public addPayment(payment: PaymentData): void {
+        this.payments.push(payment);
+    }
+
+    public getPayments(): PaymentData[] {
+        return this.payments;
+    }
+
+
+  public async webHooksUrls(event:any, data:any)
+  {
+     
+    try
+    {
+      	if (event === "charge.success") {
+		const paymentData = {
+			reference: data.reference,
+			amount: data.amount,
+			status: data.status,
+			customer: data.customer,
+		};
+
+	  const addedPayment = this.addPayment(paymentData);
+
+            // Return success message
+      return { status: 200, message: "Webhook received successfully" ,payment: addedPayment};
+	}
+
+      
+    } catch (error:any)
+    {
       console.error('Error during bank transfer:', error.message);
       throw new Error(`Failed to process the bank transfer1 ${error}`, );
     }
