@@ -75,14 +75,20 @@ class PaymentController {
     }
 
   public webhookHandler = async (req: Request, res: Response, next: NextFunction) : Promise<void> =>{
+    
+    const { event, data } = req.body;
+     const signature = req.headers['x-korapay-signature'] as string;
+
+        // Verify the signature
+        if (!this.paymentService.verifySignature(data, signature)) {
+             res.status(403).json({ message: "Invalid signature" });
+        }
     try
     {
-        const { event, data } = req.body;
 
-       
-        const result:any = await this.paymentService.webHooksUrls(event, data);
-            // Send the appropriate response based on the result
-        res.status(result.status).json({ message: result.message });
+        
+            const result = await this.paymentService.webHooksUrls(event, data);
+            res.status(result.status).json({ message: result.message, payment: result.payment })
        
       
     } catch (error:any)
