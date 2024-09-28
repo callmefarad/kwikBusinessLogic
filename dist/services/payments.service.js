@@ -30,6 +30,42 @@ function encryptAES256(encryptionKey, paymentData) {
 class PaymentService {
     constructor() {
         this.payments = [];
+        this.webHooksUrls = (event, data, signature) => __awaiter(this, void 0, void 0, function* () {
+            try {
+                const hash = crypto_1.default.createHmac('sha256', KORAPAY_API_KEY)
+                    .update(JSON.stringify(data))
+                    .digest('hex');
+                console.log('Computed HMAC:', hash);
+                console.log('Received signature:', signature);
+                if (hash !== signature) {
+                    console.warn('Invalid signature received');
+                    return { status: 403, message: 'Invalid signature' };
+                }
+                const paymentData = {
+                    reference: data.reference,
+                    amount: data.amount,
+                    status: data.status,
+                    customer: data.customer,
+                };
+                console.log('Received webhook event:', event, 'with data:', paymentData);
+                switch (event) {
+                    case "charge.success":
+                    case "transfer.success":
+                        this.addPayment(paymentData); // Save the payment information
+                        return { status: 200, message: "Webhook processed successfully", payment: paymentData };
+                    case "charge.failed":
+                    case "transfer.failed":
+                        // Handle failed transactions as needed
+                        return { status: 200, message: "Transaction failed", payment: paymentData };
+                    default:
+                        return { status: 400, message: "Unhandled event" };
+                }
+            }
+            catch (error) {
+                console.error('Error during bank transfer:', error.message);
+                throw new Error(`Failed to process the bank transfer1 ${error}`);
+            }
+        });
     }
     bankTransfer(amount, customer) {
         return __awaiter(this, void 0, void 0, function* () {
@@ -83,34 +119,6 @@ class PaymentService {
     }
     getPayments() {
         return this.payments;
-    }
-    webHooksUrls(event, data) {
-        return __awaiter(this, void 0, void 0, function* () {
-            try {
-                const paymentData = {
-                    reference: data.reference,
-                    amount: data.amount,
-                    status: data.status,
-                    customer: data.customer,
-                };
-                switch (event) {
-                    case "charge.success":
-                    case "transfer.success":
-                        this.addPayment(paymentData); // Save the payment information
-                        return { status: 200, message: "Webhook processed successfully", payment: paymentData };
-                    case "charge.failed":
-                    case "transfer.failed":
-                        // Handle failed transactions as needed
-                        return { status: 200, message: "Transaction failed", payment: paymentData };
-                    default:
-                        return { status: 400, message: "Unhandled event" };
-                }
-            }
-            catch (error) {
-                console.error('Error during bank transfer:', error.message);
-                throw new Error(`Failed to process the bank transfer1 ${error}`);
-            }
-        });
     }
     verifySignature(data, signature) {
         const hash = crypto_1.default.createHmac('sha256', KORAPAY_API_KEY).update(JSON.stringify(data)).digest('hex');

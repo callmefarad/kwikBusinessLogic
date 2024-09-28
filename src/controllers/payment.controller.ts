@@ -74,32 +74,27 @@ class PaymentController {
         }
     }
 
-  public webhookHandler = async (req: Request, res: Response, next: NextFunction) : Promise<void> =>{
-    
-    const { event, data } = req.body;
-     const signature = req.headers['x-korapay-signature'] as string;
+ // Webhook handler
+public  webHookHandler = async(req: any, res: Response): Promise<Response> => {
+   console.log('Request Headers:', req.headers); // Log all headers
+    const { event, data } = req.body; // Destructure the event and data from the request body
+    const signature = req.headers['x-korapay-signature'] as string;
 
-        // Verify the signature
-        if (!this.paymentService.verifySignature(data, signature)) {
-             res.status(403).json({ message: "Invalid signature" });
-        }
-    try
-    {
-
-        
-            const result = await this.paymentService.webHooksUrls(event, data);
-            res.status(result.status).json({ message: result.message, payment: result.payment })
-       
-      
-    } catch (error:any)
-    {
-      res.status(404).json({
-        message:`ops ${error.message}`,
-        isSuccess: false,
-      });
-      
+    if (!signature) {
+        console.warn('Received signature is undefined');
+        return res.status(403).json({ message: 'No signature provided' });
     }
-  }
+
+
+    try {
+        // Process the event based on its type
+        const result = await this.paymentService.webHooksUrls(event, data, signature);
+        return res.status(result.status).json({ message: result.message, payment: result.payment });
+    } catch (error:any) {
+        console.error('Error in webhook controller:', error.message);
+        return res.status(500).json({ message: error.message });
+    }
+}
     
      public handleCardPaymentTest = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
