@@ -19,7 +19,7 @@ class PaymentController {
         this.paymentService = new payments_service_1.default();
         this.handleBankTransfer = (req, res, next) => __awaiter(this, void 0, void 0, function* () {
             try {
-                const { amount, user, cart, storeOwner } = req.body;
+                const { amount, user, cart } = req.body;
                 // Ensure customer object contains name and email
                 if (!user || !user.name || !user.email) {
                     res.status(400).json({ success: false, message: 'Customer name and email are required.' });
@@ -27,7 +27,7 @@ class PaymentController {
                 }
                 const products = Array.isArray(cart) ? cart : [cart];
                 // Call the bankTransfer method from PaymentService
-                const result = yield this.paymentService.bankTransfer(amount, user, products, storeOwner);
+                const result = yield this.paymentService.bankTransfer(amount, user);
                 // Send success response to client
                 res.status(200).json({ success: true, data: result });
             }
@@ -47,6 +47,20 @@ class PaymentController {
         //     next(error); // Pass the error to the error handling middleware
         //   }
         //   };
+        this.createPurchase = (req, res) => __awaiter(this, void 0, void 0, function* () {
+            const { user, products, amount, storeOwner } = req.body;
+            try {
+                // Call the service to handle purchase creation
+                const purchase = yield this.paymentService.createPurchase(user, products, amount, storeOwner);
+                // Send back a successful response with the purchase data
+                return res.status(201).json({ message: 'Purchase created successfully', purchase });
+            }
+            catch (error) {
+                // Handle any errors during the purchase process
+                console.error('Error creating purchase:', error.message);
+                return res.status(500).json({ message: `Failed to create purchase: ${error.message}` });
+            }
+        });
         this.getPurchaseByStore = (req, res, next) => __awaiter(this, void 0, void 0, function* () {
             try {
                 const { storeId } = req.params;

@@ -31,85 +31,80 @@ class PaymentService {
     constructor() {
         this.payments = [];
     }
-    bankTransfer(amount, user, products, storeOwner) {
+    bankTransfer(amount, user) {
         return __awaiter(this, void 0, void 0, function* () {
-            var _a;
             try {
                 const GenerateTransactionReference = (0, uuidv4_1.uuid)();
                 const data = {
                     account_name: "kwik store account",
                     amount: amount,
                     currency: "NGN",
-                    // notification_url: "https://merchant-redirect-url.com",
                     reference: GenerateTransactionReference,
                     customer: {
                         name: user.name,
                         email: user.email,
                     },
-                    //  auto_complete: true 
                 };
                 const config = {
                     method: "post",
                     maxBodyLength: Infinity,
                     url: 'https://api.korapay.com/merchant/api/v1/charges/bank-transfer',
                     headers: {
-                        'Content-Type': 'application/json', // Make sure you're sending JSON
-                        'Authorization': `Bearer ${KORAPAY_API_KEY}`, // Replace with your API key
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${KORAPAY_API_KEY}`, // Use your actual API key here
                     },
                     data: JSON.stringify(data),
                 };
-                let paymemtresponse;
+                let paymentResponse;
                 yield (0, axios_1.default)(config).then(function (response) {
                     return __awaiter(this, void 0, void 0, function* () {
-                        paymemtresponse = response;
+                        paymentResponse = response;
                     });
                 }).catch(function (error) {
                     throw new errorDefinition_1.MainAppError({
                         name: 'Failed transaction',
-                        message: `Transaction not failed ${error.message}`,
+                        message: `Transaction failed: ${error.message}`,
                         status: 404,
                         isSuccess: false,
                     });
                 });
-                const check = JSON.parse(JSON.stringify(paymemtresponse === null || paymemtresponse === void 0 ? void 0 : paymemtresponse.data));
-                if (((_a = check === null || check === void 0 ? void 0 : check.data) === null || _a === void 0 ? void 0 : _a.status) === "processing") {
-                    try {
-                        const purchase = new purchase_model_1.default({
-                            customer: {
-                                name: user === null || user === void 0 ? void 0 : user.name,
-                                email: user === null || user === void 0 ? void 0 : user.email,
-                                address: user === null || user === void 0 ? void 0 : user.address
-                            },
-                            storeOwner: {
-                                // name: storeOwner?.name,
-                                storeId: storeOwner === null || storeOwner === void 0 ? void 0 : storeOwner.storeId,
-                            },
-                            products: products.map((product) => ({
-                                productId: product.productId,
-                                productName: product.productName,
-                                quantity: product.quantity,
-                                price: product.price,
-                            })),
-                            totalAmount: amount,
-                            paymentStatus: "paid", // Mark as paid after successful transaction
-                        });
-                        yield purchase.save(); // Save the purchase details
-                    }
-                    catch (error) {
-                        console.error("Error saving purchase details:", error);
-                        throw new errorDefinition_1.MainAppError({
-                            name: 'Database error',
-                            message: `Failed to save purchase details: ${error}`,
-                            status: 500,
-                            isSuccess: false,
-                        });
-                    }
-                }
-                return JSON.parse(JSON.stringify(paymemtresponse === null || paymemtresponse === void 0 ? void 0 : paymemtresponse.data));
+                return JSON.parse(JSON.stringify(paymentResponse === null || paymentResponse === void 0 ? void 0 : paymentResponse.data));
             }
             catch (error) {
                 console.error('Error during bank transfer:', error.message);
-                throw new Error(`Failed to process the bank transfer1 ${error}`);
+                throw new Error(`Failed to process the bank transfer: ${error.message}`);
+            }
+        });
+    }
+    createPurchase(user, products, amount, storeOwner) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                // Create a new purchase document
+                const purchase = new purchase_model_1.default({
+                    customer: {
+                        name: user.name,
+                        email: user.email,
+                        address: user.address,
+                    },
+                    storeOwner: {
+                        storeId: storeOwner.storeId,
+                    },
+                    products: products.map((product) => ({
+                        productId: product.productId,
+                        productName: product.productName,
+                        quantity: product.quantity,
+                        price: product.price,
+                    })),
+                    totalAmount: amount,
+                    paymentStatus: 'paid', // This can be updated based on actual payment status
+                });
+                // Save the purchase in the database
+                yield purchase.save();
+                return purchase;
+            }
+            catch (error) {
+                console.error('Error creating purchase:', error.message);
+                throw new Error(`Failed to create purchase: ${error.message}`);
             }
         });
     }

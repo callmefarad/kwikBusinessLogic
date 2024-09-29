@@ -48,69 +48,72 @@ class PaymentService
 {
   
    private payments: PaymentData[] = []; 
-  public async bankTransfer(amount: number, 
-    user: { name: string, email: string, address:string },
-    products: Array<{ productId: string; productName: string; quantity: number; price: number }>,
-    storeOwner: { name: string; storeId: string }
-  ): Promise<any> {
-    try
-    {
-      const GenerateTransactionReference = uuid();
-      
-      const data = {
-        account_name: "kwik store account",
-        amount: amount,
-        currency: "NGN",
-        // notification_url: "https://merchant-redirect-url.com",
-        reference: GenerateTransactionReference,
-        customer: {
-          name: user.name,
-          email: user.email,
-        },
-        //  auto_complete: true 
-      };
+ public async bankTransfer(
+  amount: number,
+  user: { name: string; email: string },
+): Promise<any> {
+  try {
+    const GenerateTransactionReference = uuid();
+    
+    const data = {
+      account_name: "kwik store account",
+      amount: amount,
+      currency: "NGN",
+      reference: GenerateTransactionReference,
+      customer: {
+        name: user.name,
+        email: user.email,
+      },
+    };
 
-      const config= {
-        method: "post",
-        maxBodyLength: Infinity,
-        url: 'https://api.korapay.com/merchant/api/v1/charges/bank-transfer',
-        headers: {
-          'Content-Type': 'application/json', // Make sure you're sending JSON
-          'Authorization': `Bearer ${KORAPAY_API_KEY}`, // Replace with your API key
-        },
-        data: JSON.stringify(data),
-      };
+    const config = {
+      method: "post",
+      maxBodyLength: Infinity,
+      url: 'https://api.korapay.com/merchant/api/v1/charges/bank-transfer',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${KORAPAY_API_KEY}`, // Use your actual API key here
+      },
+      data: JSON.stringify(data),
+    };
 
-      let paymemtresponse:any ; 
+    let paymentResponse: any;
 
-    await axios(config).then(async function (response)
-    { 
-      paymemtresponse = response
-
-    }).catch(function (error)
-    {
+    await axios(config).then(async function (response) {
+      paymentResponse = response;
+    }).catch(function (error) {
       throw new MainAppError({
         name: 'Failed transaction',
-        message: `Transaction not failed ${error.message}` ,
+        message: `Transaction failed: ${error.message}`,
         status: 404,
         isSuccess: false,
       });
-    })
-       const check = JSON.parse(JSON.stringify(paymemtresponse?.data))
-    
-    
+    });
 
-    if (check?.data?.status === "processing") {
+    return JSON.parse(JSON.stringify(paymentResponse?.data));
+  } catch (error: any) {
+    console.error('Error during bank transfer:', error.message);
+    throw new Error(`Failed to process the bank transfer: ${error.message}`);
+  }
+  }
+  
+  
+  public async createPurchase(
+    user: { name: string; email: string; address: string },
+    products: Array<{ productId: string; productName: string; quantity: number; price: number }>,
+    amount: number,
+    storeOwner: { storeId: string }
+  ): Promise<any> {
     try {
+      // Create a new purchase document
       const purchase = new purchaseModel({
         customer: {
-          name: user?.name,
-          email: user?.email,
-          address: user?.address
+          name: user.name,
+          email: user.email,
+          address: user.address,
         },
         storeOwner: {
-          // name: storeOwner?.name,
-          storeId: storeOwner?.storeId,
+          storeId: storeOwner.storeId,
         },
         products: products.map((product) => ({
           productId: product.productId,
@@ -119,28 +122,18 @@ class PaymentService
           price: product.price,
         })),
         totalAmount: amount,
-        paymentStatus: "paid", // Mark as paid after successful transaction
+        paymentStatus: 'paid', // This can be updated based on actual payment status
       });
 
-      await purchase.save(); // Save the purchase details
-    } catch (error) {
-      console.error("Error saving purchase details:", error);
-      throw new MainAppError({
-        name: 'Database error',
-        message: `Failed to save purchase details: ${error}`,
-        status: 500,
-        isSuccess: false,
-      });
+      // Save the purchase in the database
+      await purchase.save();
+      return purchase;
+    } catch (error: any) {
+      console.error('Error creating purchase:', error.message);
+      throw new Error(`Failed to create purchase: ${error.message}`);
     }
   }
 
-      return JSON.parse(JSON.stringify(paymemtresponse?.data))
-      
-    } catch (error:any) {
-      console.error('Error during bank transfer:', error.message);
-      throw new Error(`Failed to process the bank transfer1 ${error}`, );
-    }
-  }
 public addPayment(payment: PaymentData): void {
     this.payments.push(payment);
   }

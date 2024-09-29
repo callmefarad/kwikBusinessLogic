@@ -18,6 +18,7 @@ class PaymentRoutes {
         this.router.post(`${this.path}create-bank-payment`, this.paymentController.handleBankTransfer);
         this.router.post(`${this.path}webhook`, this.paymentController.webHookHandler);
         this.router.get(`${this.path}payments`, this.paymentController.getPayments);
+        this.router.post(`${this.path}create-purchase`, this.paymentController.createPurchase);
         // this.router.post(`${this.path}logout`, authMiddleware, this.authController.logOutUser);
     }
 }
