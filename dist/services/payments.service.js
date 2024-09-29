@@ -37,7 +37,7 @@ class PaymentService {
             try {
                 const GenerateTransactionReference = (0, uuidv4_1.uuid)();
                 const data = {
-                    account_name: "Demo account",
+                    account_name: "kwik store account",
                     amount: amount,
                     currency: "NGN",
                     // notification_url: "https://merchant-redirect-url.com",
@@ -72,7 +72,6 @@ class PaymentService {
                     });
                 });
                 const check = JSON.parse(JSON.stringify(paymemtresponse === null || paymemtresponse === void 0 ? void 0 : paymemtresponse.data));
-                console.log("dudiddfsdc", check);
                 if (((_a = check === null || check === void 0 ? void 0 : check.data) === null || _a === void 0 ? void 0 : _a.status) === "processing") {
                     try {
                         const purchase = new purchase_model_1.default({
