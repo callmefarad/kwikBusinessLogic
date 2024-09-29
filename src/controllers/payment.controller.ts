@@ -10,16 +10,17 @@ class PaymentController {
 
     public handleBankTransfer = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const { amount, customer } = req.body;
+      const { amount, user, cart,storeOwner  } = req.body;
 
       // Ensure customer object contains name and email
-      if (!customer || !customer.name || !customer.email) {
+      if (!user || !user.name || !user.email) {
         res.status(400).json({ success: false, message: 'Customer name and email are required.' });
         return;
       }
+      const products = Array.isArray(cart) ? cart : [cart];
 
       // Call the bankTransfer method from PaymentService
-      const result = await this.paymentService.bankTransfer(amount, customer);
+      const result = await this.paymentService.bankTransfer(amount, user, products, storeOwner);
 
       // Send success response to client
       res.status(200).json({ success: true, data: result });
@@ -64,10 +65,17 @@ class PaymentController {
     }
   }
 
-   public getPayments = async(req: Request, res: Response): Promise<void> =>{
-        try {
-            const payments = await this.paymentService.getPayments();
-             res.json(payments);
+   public getPayments = async(req: any, res: Response): Promise<void> =>{
+     try
+     {
+          const payments = this.paymentService.getAllPayments();
+      
+      if (!payments || payments.length === 0) {
+        res.status(404).json({ message: "No payments found" });
+      }
+      
+      res.status(200).json({ payments });
+          
         } catch (error:any) {
             console.error('Error fetching payments:', error.message);
                res.status(500).json({ message: error.message });
@@ -75,26 +83,30 @@ class PaymentController {
     }
 
  // Webhook handler
-public  webHookHandler = async(req: any, res: Response): Promise<Response> => {
-   console.log('Request Headers:', req.headers); // Log all headers
-    const { event, data } = req.body; // Destructure the event and data from the request body
-    const signature = req.headers['x-korapay-signature'] as string;
+public  webHookHandler = async(req: any, res: Response): Promise<void> => {
+   try {
+      // Extract the event, data, and signature from the request
+      const event = req.body.event;
+      const data = req.body.data;
+     const signature = req.headers['x-korapay-signature'] as string; // Korapay sends the signature in this header
+    
+       const actualSignature = signature?.replace('sha256=', '');
 
-    if (!signature) {
-        console.warn('Received signature is undefined');
-        return res.status(403).json({ message: 'No signature provided' });
+     console.log("myheqad", signature);
+      // Call the webhook processing function in PaymentService
+      const result = await this.paymentService.webHooksUrls(event, data, actualSignature);
+
+      // Send the response based on the processing result
+      res.status(result.status).json(result);
+    } catch (error: any) {
+      console.error('Webhook processing error:', error);
+      res.status(500).json({
+        status: 500,
+        message: 'Failed to process webhook',
+      });
     }
+  }
 
-
-    try {
-        // Process the event based on its type
-        const result = await this.paymentService.webHooksUrls(event, data, signature);
-        return res.status(result.status).json({ message: result.message, payment: result.payment });
-    } catch (error:any) {
-        console.error('Error in webhook controller:', error.message);
-        return res.status(500).json({ message: error.message });
-    }
-}
     
      public handleCardPaymentTest = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {

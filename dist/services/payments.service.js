@@ -30,56 +30,21 @@ function encryptAES256(encryptionKey, paymentData) {
 class PaymentService {
     constructor() {
         this.payments = [];
-        this.webHooksUrls = (event, data, signature) => __awaiter(this, void 0, void 0, function* () {
-            try {
-                const hash = crypto_1.default.createHmac('sha256', KORAPAY_API_KEY)
-                    .update(JSON.stringify(data))
-                    .digest('hex');
-                console.log('Computed HMAC:', hash);
-                console.log('Received signature:', signature);
-                if (hash !== signature) {
-                    console.warn('Invalid signature received');
-                    return { status: 403, message: 'Invalid signature' };
-                }
-                const paymentData = {
-                    reference: data.reference,
-                    amount: data.amount,
-                    status: data.status,
-                    customer: data.customer,
-                };
-                console.log('Received webhook event:', event, 'with data:', paymentData);
-                switch (event) {
-                    case "charge.success":
-                    case "transfer.success":
-                        this.addPayment(paymentData); // Save the payment information
-                        return { status: 200, message: "Webhook processed successfully", payment: paymentData };
-                    case "charge.failed":
-                    case "transfer.failed":
-                        // Handle failed transactions as needed
-                        return { status: 200, message: "Transaction failed", payment: paymentData };
-                    default:
-                        return { status: 400, message: "Unhandled event" };
-                }
-            }
-            catch (error) {
-                console.error('Error during bank transfer:', error.message);
-                throw new Error(`Failed to process the bank transfer1 ${error}`);
-            }
-        });
     }
-    bankTransfer(amount, customer) {
+    bankTransfer(amount, user, products, storeOwner) {
         return __awaiter(this, void 0, void 0, function* () {
+            var _a;
             try {
                 const GenerateTransactionReference = (0, uuidv4_1.uuid)();
                 const data = {
                     account_name: "Demo account",
                     amount: amount,
                     currency: "NGN",
-                    notification_url: "https://merchant-redirect-url.com",
+                    // notification_url: "https://merchant-redirect-url.com",
                     reference: GenerateTransactionReference,
                     customer: {
-                        name: customer.name,
-                        email: customer.email,
+                        name: user.name,
+                        email: user.email,
                     },
                     //  auto_complete: true 
                 };
@@ -106,6 +71,41 @@ class PaymentService {
                         isSuccess: false,
                     });
                 });
+                const check = JSON.parse(JSON.stringify(paymemtresponse === null || paymemtresponse === void 0 ? void 0 : paymemtresponse.data));
+                console.log("dudiddfsdc", check);
+                if (((_a = check === null || check === void 0 ? void 0 : check.data) === null || _a === void 0 ? void 0 : _a.status) === "processing") {
+                    try {
+                        const purchase = new purchase_model_1.default({
+                            customer: {
+                                name: user === null || user === void 0 ? void 0 : user.name,
+                                email: user === null || user === void 0 ? void 0 : user.email,
+                                address: user === null || user === void 0 ? void 0 : user.address
+                            },
+                            storeOwner: {
+                                // name: storeOwner?.name,
+                                storeId: storeOwner === null || storeOwner === void 0 ? void 0 : storeOwner.storeId,
+                            },
+                            products: products.map((product) => ({
+                                productId: product.productId,
+                                productName: product.productName,
+                                quantity: product.quantity,
+                                price: product.price,
+                            })),
+                            totalAmount: amount,
+                            paymentStatus: "paid", // Mark as paid after successful transaction
+                        });
+                        yield purchase.save(); // Save the purchase details
+                    }
+                    catch (error) {
+                        console.error("Error saving purchase details:", error);
+                        throw new errorDefinition_1.MainAppError({
+                            name: 'Database error',
+                            message: `Failed to save purchase details: ${error}`,
+                            status: 500,
+                            isSuccess: false,
+                        });
+                    }
+                }
                 return JSON.parse(JSON.stringify(paymemtresponse === null || paymemtresponse === void 0 ? void 0 : paymemtresponse.data));
             }
             catch (error) {
@@ -117,12 +117,64 @@ class PaymentService {
     addPayment(payment) {
         this.payments.push(payment);
     }
-    getPayments() {
+    // Fetch all payments
+    getAllPayments() {
         return this.payments;
     }
-    verifySignature(data, signature) {
-        const hash = crypto_1.default.createHmac('sha256', KORAPAY_API_KEY).update(JSON.stringify(data)).digest('hex');
-        return hash === signature;
+    // Main webhook handling function
+    webHooksUrls(event, data, signature) {
+        return __awaiter(this, void 0, void 0, function* () {
+            // Step 1: Validate the signature first
+            const validationResponse = this.validateSignature(data, signature);
+            if (!validationResponse.valid) {
+                console.warn("Invalid signature received");
+                return { status: 403, message: "Invalid signature" };
+            }
+            // Step 2: Process the webhook event and data
+            return this.processEvent(event, data);
+        });
+    }
+    // Helper function for validating webhook signature
+    validateSignature(data, signature) {
+        const secretKey = KORAPAY_API_KEY;
+        const hash = crypto_1.default
+            .createHmac("sha256", secretKey)
+            .update(JSON.stringify(data)) // Validate ONLY the `data` object
+            .digest("hex");
+        console.log("Computed HMAC:", hash);
+        console.log("Received signature:", signature);
+        if (hash !== signature) {
+            return { valid: false };
+        }
+        return { valid: true, computedHash: hash };
+    }
+    // Helper function for processing webhook events
+    processEvent(event, data) {
+        const paymentData = {
+            reference: data.reference,
+            amount: data.amount,
+            status: data.status,
+            customer: data.customer,
+        };
+        console.log("Received webhook event:", event, "with data:", paymentData);
+        switch (event) {
+            case "charge.success":
+            case "transfer.success":
+                console.log("Adding payment data to array", paymentData);
+                this.addPayment(paymentData);
+                return {
+                    status: 200,
+                    message: "Webhook processed successfully",
+                    payment: paymentData,
+                };
+            case "charge.failed":
+            case "transfer.failed":
+                console.log("Transaction failed", paymentData);
+                return { status: 200, message: "Transaction failed", payment: paymentData };
+            default:
+                console.warn("Unhandled event received");
+                return { status: 400, message: "Unhandled event" };
+        }
     }
     payWithCard(cardData, amount, user, products, storeOwner) {
         return __awaiter(this, void 0, void 0, function* () {

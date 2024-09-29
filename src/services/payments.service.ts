@@ -49,7 +49,9 @@ class PaymentService
   
    private payments: PaymentData[] = []; 
   public async bankTransfer(amount: number, 
-    customer: { name: string, email: string }
+    user: { name: string, email: string, address:string },
+    products: Array<{ productId: string; productName: string; quantity: number; price: number }>,
+    storeOwner: { name: string; storeId: string }
   ): Promise<any> {
     try
     {
@@ -59,11 +61,11 @@ class PaymentService
         account_name: "Demo account",
         amount: amount,
         currency: "NGN",
-        notification_url: "https://merchant-redirect-url.com",
+        // notification_url: "https://merchant-redirect-url.com",
         reference: GenerateTransactionReference,
         customer: {
-          name: customer.name,
-          email: customer.email,
+          name: user.name,
+          email: user.email,
         },
         //  auto_complete: true 
       };
@@ -94,75 +96,124 @@ class PaymentService
         isSuccess: false,
       });
     })
+       const check = JSON.parse(JSON.stringify(paymemtresponse?.data))
+    
+    
 
-    return   JSON.parse(JSON.stringify(paymemtresponse?.data))
+    if (check?.data?.status === "processing") {
+    try {
+      const purchase = new purchaseModel({
+        customer: {
+          name: user?.name,
+          email: user?.email,
+          address: user?.address
+        },
+        storeOwner: {
+          // name: storeOwner?.name,
+          storeId: storeOwner?.storeId,
+        },
+        products: products.map((product) => ({
+          productId: product.productId,
+          productName: product.productName,
+          quantity: product.quantity,
+          price: product.price,
+        })),
+        totalAmount: amount,
+        paymentStatus: "paid", // Mark as paid after successful transaction
+      });
+
+      await purchase.save(); // Save the purchase details
+    } catch (error) {
+      console.error("Error saving purchase details:", error);
+      throw new MainAppError({
+        name: 'Database error',
+        message: `Failed to save purchase details: ${error}`,
+        status: 500,
+        isSuccess: false,
+      });
+    }
+  }
+
+      return JSON.parse(JSON.stringify(paymemtresponse?.data))
+      
     } catch (error:any) {
       console.error('Error during bank transfer:', error.message);
       throw new Error(`Failed to process the bank transfer1 ${error}`, );
     }
   }
+public addPayment(payment: PaymentData): void {
+    this.payments.push(payment);
+  }
 
-  public addPayment(payment: PaymentData): void {
-        this.payments.push(payment);
+  // Fetch all payments
+  public getAllPayments(): PaymentData[] {
+    return this.payments;
+  }
+
+  // Main webhook handling function
+  public async webHooksUrls(event: string, data: any, signature: string) {
+    // Step 1: Validate the signature first
+    const validationResponse = this.validateSignature(data, signature);
+    if (!validationResponse.valid) {
+      console.warn("Invalid signature received");
+      return { status: 403, message: "Invalid signature" };
     }
 
-    public getPayments(): PaymentData[] {
-        return this.payments;
+    // Step 2: Process the webhook event and data
+    return this.processEvent(event, data);
+  }
+
+  // Helper function for validating webhook signature
+  private validateSignature(data: any, signature: string): { valid: boolean; computedHash?: string } {
+    const secretKey = KORAPAY_API_KEY as string;
+    const hash = crypto
+      .createHmac("sha256", secretKey)
+      .update(JSON.stringify(data))  // Validate ONLY the `data` object
+      .digest("hex");
+
+    console.log("Computed HMAC:", hash);
+    console.log("Received signature:", signature);
+
+    if (hash !== signature) {
+      return { valid: false };
     }
 
+    return { valid: true, computedHash: hash };
+  }
 
-  public  webHooksUrls =async (event:any, data:any, signature:any) =>
-  {
-     
-    try
-    {
-        const hash = crypto.createHmac('sha256', KORAPAY_API_KEY)
-            .update(JSON.stringify(data))
-        .digest('hex');
-      
-       console.log('Computed HMAC:', hash);
-        console.log('Received signature:', signature);
+  // Helper function for processing webhook events
+  private processEvent(event: string, data: any) {
+    const paymentData: PaymentData = {
+      reference: data.reference,
+      amount: data.amount,
+      status: data.status,
+      customer: data.customer,
+    };
 
-        if (hash !== signature) {
-            console.warn('Invalid signature received');
-            return { status: 403, message: 'Invalid signature' };
-        }
+    console.log("Received webhook event:", event, "with data:", paymentData);
 
-      const paymentData: PaymentData = {
-                reference: data.reference,
-                amount: data.amount,
-                status: data.status,
-                customer: data.customer,
-      };
-      console.log('Received webhook event:', event, 'with data:', paymentData);
+    switch (event) {
+      case "charge.success":
+      case "transfer.success":
+        console.log("Adding payment data to array", paymentData);
+        this.addPayment(paymentData);
+        return {
+          status: 200,
+          message: "Webhook processed successfully",
+          payment: paymentData,
+        };
 
+      case "charge.failed":
+      case "transfer.failed":
+        console.log("Transaction failed", paymentData);
+        return { status: 200, message: "Transaction failed", payment: paymentData };
 
-      
-      	switch (event) {
-                case "charge.success":
-                case "transfer.success":
-                    this.addPayment(paymentData); // Save the payment information
-                    return { status: 200, message: "Webhook processed successfully", payment: paymentData };
-                case "charge.failed":
-                case "transfer.failed":
-                    // Handle failed transactions as needed
-                    return { status: 200, message: "Transaction failed", payment: paymentData };
-                default:
-                    return { status: 400, message: "Unhandled event" };
-            }
-
-      
-    } catch (error:any)
-    {
-      console.error('Error during bank transfer:', error.message);
-      throw new Error(`Failed to process the bank transfer1 ${error}`, );
+      default:
+        console.warn("Unhandled event received");
+        return { status: 400, message: "Unhandled event" };
     }
   }
 
-   public verifySignature(data: any, signature: string): boolean {
-        const hash = crypto.createHmac('sha256',KORAPAY_API_KEY).update(JSON.stringify(data)).digest('hex');
-        return hash === signature;
-    }
 
   public async payWithCard( cardData: {
       name: string;

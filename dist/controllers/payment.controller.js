@@ -19,14 +19,15 @@ class PaymentController {
         this.paymentService = new payments_service_1.default();
         this.handleBankTransfer = (req, res, next) => __awaiter(this, void 0, void 0, function* () {
             try {
-                const { amount, customer } = req.body;
+                const { amount, user, cart, storeOwner } = req.body;
                 // Ensure customer object contains name and email
-                if (!customer || !customer.name || !customer.email) {
+                if (!user || !user.name || !user.email) {
                     res.status(400).json({ success: false, message: 'Customer name and email are required.' });
                     return;
                 }
+                const products = Array.isArray(cart) ? cart : [cart];
                 // Call the bankTransfer method from PaymentService
-                const result = yield this.paymentService.bankTransfer(amount, customer);
+                const result = yield this.paymentService.bankTransfer(amount, user, products, storeOwner);
                 // Send success response to client
                 res.status(200).json({ success: true, data: result });
             }
@@ -65,8 +66,11 @@ class PaymentController {
         });
         this.getPayments = (req, res) => __awaiter(this, void 0, void 0, function* () {
             try {
-                const payments = yield this.paymentService.getPayments();
-                res.json(payments);
+                const payments = this.paymentService.getAllPayments();
+                if (!payments || payments.length === 0) {
+                    res.status(404).json({ message: "No payments found" });
+                }
+                res.status(200).json({ payments });
             }
             catch (error) {
                 console.error('Error fetching payments:', error.message);
@@ -75,21 +79,24 @@ class PaymentController {
         });
         // Webhook handler
         this.webHookHandler = (req, res) => __awaiter(this, void 0, void 0, function* () {
-            console.log('Request Headers:', req.headers); // Log all headers
-            const { event, data } = req.body; // Destructure the event and data from the request body
-            const signature = req.headers['x-korapay-signature'];
-            if (!signature) {
-                console.warn('Received signature is undefined');
-                return res.status(403).json({ message: 'No signature provided' });
-            }
             try {
-                // Process the event based on its type
-                const result = yield this.paymentService.webHooksUrls(event, data, signature);
-                return res.status(result.status).json({ message: result.message, payment: result.payment });
+                // Extract the event, data, and signature from the request
+                const event = req.body.event;
+                const data = req.body.data;
+                const signature = req.headers['x-korapay-signature']; // Korapay sends the signature in this header
+                const actualSignature = signature === null || signature === void 0 ? void 0 : signature.replace('sha256=', '');
+                console.log("myheqad", signature);
+                // Call the webhook processing function in PaymentService
+                const result = yield this.paymentService.webHooksUrls(event, data, actualSignature);
+                // Send the response based on the processing result
+                res.status(result.status).json(result);
             }
             catch (error) {
-                console.error('Error in webhook controller:', error.message);
-                return res.status(500).json({ message: error.message });
+                console.error('Webhook processing error:', error);
+                res.status(500).json({
+                    status: 500,
+                    message: 'Failed to process webhook',
+                });
             }
         });
         this.handleCardPaymentTest = (req, res, next) => __awaiter(this, void 0, void 0, function* () {
