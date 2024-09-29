@@ -10,7 +10,7 @@ class PaymentController {
 
     public handleBankTransfer = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const { amount, user, cart,storeOwner  } = req.body;
+      const { amount, user, cart  } = req.body;
 
       // Ensure customer object contains name and email
       if (!user || !user.name || !user.email) {
@@ -20,7 +20,7 @@ class PaymentController {
       const products = Array.isArray(cart) ? cart : [cart];
 
       // Call the bankTransfer method from PaymentService
-      const result = await this.paymentService.bankTransfer(amount, user, products, storeOwner);
+      const result = await this.paymentService.bankTransfer(amount, user);
 
       // Send success response to client
       res.status(200).json({ success: true, data: result });
@@ -43,6 +43,22 @@ class PaymentController {
   //     next(error); // Pass the error to the error handling middleware
   //   }
   //   };
+
+  public createPurchase = async (req: Request, res: Response): Promise<Response | undefined> => {
+    const { user, products, amount, storeOwner } = req.body;
+
+    try {
+      // Call the service to handle purchase creation
+      const purchase = await this.paymentService.createPurchase(user, products, amount, storeOwner);
+
+      // Send back a successful response with the purchase data
+      return res.status(201).json({ message: 'Purchase created successfully', purchase });
+    } catch (error: any) {
+      // Handle any errors during the purchase process
+      console.error('Error creating purchase:', error.message);
+      return res.status(500).json({ message: `Failed to create purchase: ${error.message}` });
+    }
+  }
 
   
 
