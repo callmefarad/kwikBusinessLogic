@@ -65,25 +65,23 @@ class PaymentController {
     }
   }
 
-   public getPayments = async(req: any, res: Response): Promise<void> =>{
-     try
-     {
-          const payments = this.paymentService.getAllPayments();
-      
-      if (!payments || payments.length === 0) {
-        res.status(404).json({ message: "No payments found" });
-      }
-      
-      res.status(200).json({ payments });
-          
-        } catch (error:any) {
-            console.error('Error fetching payments:', error.message);
-               res.status(500).json({ message: error.message });
-        }
+ public getPayments = async(req: any, res: Response): Promise<Response> => {
+  try {
+    const payments = this.paymentService.getAllPayments();
+
+    if (!payments || payments.length === 0) {
+      return res.status(404).json({ message: "No payments found" });
     }
 
+    return res.status(200).json({ payments });
+  } catch (error:any) {
+    console.error('Error fetching payments:', error.message);
+    return res.status(500).json({ message: error.message });
+  }
+};
+
  // Webhook handler
-public  webHookHandler = async(req: any, res: Response): Promise<void> => {
+public  webHookHandler = async(req: any, res: Response): Promise<Response | undefined> => {
    try {
       // Extract the event, data, and signature from the request
       const event = req.body.event;
@@ -97,7 +95,7 @@ public  webHookHandler = async(req: any, res: Response): Promise<void> => {
       const result = await this.paymentService.webHooksUrls(event, data, actualSignature);
 
       // Send the response based on the processing result
-      res.status(result.status).json(result);
+     return res.status(result.status).json(result);
     } catch (error: any) {
       console.error('Webhook processing error:', error);
       res.status(500).json({

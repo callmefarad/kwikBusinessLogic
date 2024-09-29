@@ -58,7 +58,7 @@ class PaymentService
       const GenerateTransactionReference = uuid();
       
       const data = {
-        account_name: "Demo account",
+        account_name: "kwik store account",
         amount: amount,
         currency: "NGN",
         // notification_url: "https://merchant-redirect-url.com",

@@ -68,13 +68,13 @@ class PaymentController {
             try {
                 const payments = this.paymentService.getAllPayments();
                 if (!payments || payments.length === 0) {
-                    res.status(404).json({ message: "No payments found" });
+                    return res.status(404).json({ message: "No payments found" });
                 }
-                res.status(200).json({ payments });
+                return res.status(200).json({ payments });
             }
             catch (error) {
                 console.error('Error fetching payments:', error.message);
-                res.status(500).json({ message: error.message });
+                return res.status(500).json({ message: error.message });
             }
         });
         // Webhook handler
@@ -89,7 +89,7 @@ class PaymentController {
                 // Call the webhook processing function in PaymentService
                 const result = yield this.paymentService.webHooksUrls(event, data, actualSignature);
                 // Send the response based on the processing result
-                res.status(result.status).json(result);
+                return res.status(result.status).json(result);
             }
             catch (error) {
                 console.error('Webhook processing error:', error);
